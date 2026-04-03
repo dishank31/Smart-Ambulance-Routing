@@ -40,7 +40,7 @@ with st.sidebar:
         bp_dia = st.slider("BP Diastolic", 40, 130, 80)
         spo2 = st.slider("SpO2 (%)", 70, 100, 98)
         rr = st.slider("Respiratory Rate", 8, 40, 16)
-        temp = st.slider("Temperature (°C)", 34.0, 42.0, 37.0, 0.1)
+        temp = st.slider("Temperature (°F)", 94.0, 108.0, 98.6, 0.1)
     
     with st.expander("Clinical Assessment", expanded=True):
         gcs = st.slider("GCS Score", 3, 15, 15)

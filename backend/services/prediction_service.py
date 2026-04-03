@@ -173,7 +173,7 @@ class PredictionService:
         hour  = loc_context.get('hour', 12)
         hr    = triage_data.get('heart_rate', 80)
         sbp   = triage_data.get('bp_systolic', 120)
-        temp  = triage_data.get('temperature', 37.0)
+        temp  = triage_data.get('temperature', 98.6)
 
         input_data = [age, gender, hour, hr, sbp, temp]
         X = np.array([input_data])
