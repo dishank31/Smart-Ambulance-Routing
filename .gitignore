@@ -1,0 +1,59 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+venv/
+env/
+.env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Data (large files)
+datasets/raw/*.csv
+datasets/raw/*.rdata
+datasets/raw/*.parquet
+datasets/processed/*.csv
+datasets/bed_availability/*.csv
+datasets/synthetic/*.csv
+
+# Model artifacts (large)
+models/**/*.joblib
+models/**/*.pkl
+models/**/*.pickle
+
+# Logs
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Large archives
+*.zip
+ds_counts.json
+out*.txt
+test_*.txt
+test_output.txt
+test_dispatch_output.txt
+
+# Keep directory structure
+!datasets/raw/.gitkeep
+!datasets/processed/.gitkeep
+!datasets/synthetic/.gitkeep
+!models/severity/.gitkeep
+!models/eta/.gitkeep
+!models/bed_availability/.gitkeep
