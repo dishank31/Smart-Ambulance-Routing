@@ -23,12 +23,13 @@ env/
 .ipynb_checkpoints/
 
 # Data (large files)
-datasets/raw/*.csv
-datasets/raw/*.rdata
-datasets/raw/*.parquet
-datasets/processed/*.csv
-datasets/bed_availability/*.csv
-datasets/synthetic/*.csv
+*.csv
+*.rdata
+*.parquet
+/datasets/raw/
+/datasets/processed/
+/datasets/synthetic/
+/datasets/bed_availability/
 
 # Model artifacts (large)
 models/**/*.joblib
