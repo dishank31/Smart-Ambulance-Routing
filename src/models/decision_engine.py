@@ -24,16 +24,17 @@ class HospitalRecommender:
             eta = eta_predictions.get(h_id, 999)
             beds = bed_predictions.get(h_id, 0)
             
-            # Simple scoring:
+            # Better scoring:
             # - Normalize ETA (inverse, so lower is better)
-            # - Normalize beds (cap at 10)
+            # - Normalize beds (use a max capacity of 300 for scaling)
             
-            eta_score = max(0, 30 - eta) / 30.0 # 0 if >30 min, 1 if 0 min
-            bed_score = min(beds, 10) / 10.0
+            eta_score = max(0, 45 - eta) / 45.0 # Increased range to 45 min
+            bed_score = min(beds, 300) / 300.0
             
             w1 = Config.DECISION_WEIGHTS['eta_weight']
             w2 = Config.DECISION_WEIGHTS['bed_weight']
             
+            # Weighted average
             score = (w1 * eta_score) + (w2 * bed_score)
             
             recommendations.append({

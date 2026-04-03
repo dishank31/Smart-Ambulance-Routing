@@ -64,11 +64,19 @@ class PredictionService:
         if f'gender_{g}' in self.sev_features:
             row[self.sev_features.index(f'gender_{g}')] = 1
             
-        # 4. Handle Chief Complaint (one-hot encoded structure in your real data)
-        cc = req_dict.get('chief_complaint', '').lower().replace(' ', '')
-        cc_col = f'cc_{cc}'
+        # 4. Handle Chief Complaint (Standardize: remove ALL spaces and underscores)
+        cc_raw = req_dict.get('chief_complaint', '').lower().replace(' ', '').replace('_', '')
+        cc_col = f'cc_{cc_raw}'
         if cc_col in self.sev_features:
             row[self.sev_features.index(cc_col)] = 1
+            
+        # 5. Handle Chronic Condition Mapping
+        if req_dict.get('has_chronic_condition', 0):
+            # Map general chronic flag to common model indicators
+            chronic_indicators = ['history_htn_on_meds', 'history_diabetes', 'history_asthma', 'history_cad']
+            for ind in chronic_indicators:
+                if ind in self.sev_features:
+                    row[self.sev_features.index(ind)] = 1
         
         X = np.array([row])
         X_scaled = self.sev_prep.scaler.transform(X)
