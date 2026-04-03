@@ -88,6 +88,19 @@ class PredictionService:
         probas = self.sev_model.predict_proba(X_scaled)[0]
         confidence = float(np.max(probas))
         
+        # --- MEDICAL OVERRIDE RULES (Critical Safety Layer) ---
+        # Rule 1: Cardiac/Respiratory arrest or Unconscious (GCS < 8) is ALWAYS Level 1
+        is_arrest = any(x in cc_col for x in ['cardiacarrest', 'respiratoryarrest', 'arrest'])
+        if is_arrest or req_dict.get('gcs_score', 15) <= 7 or req_dict['heart_rate'] == 0:
+            severity = 1
+            confidence = 0.99 # Override with high clinical certainty
+            
+        # Rule 2: Chest Pain or Stroke symptoms with abnormal vitals are ALWAYS at least Level 2
+        elif any(x in cc_col for x in ['chestpain', 'stroke', 'bleeding']) or req_dict['spo2'] < 90:
+            if severity > 2:
+                severity = 2
+                confidence = 0.95
+        
         return {
             'severity_level': severity,
             'severity_label': Config.SEVERITY_LABELS.get(severity, "Unknown"),
