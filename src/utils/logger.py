@@ -1,55 +1,37 @@
-"""
-Logging setup for the Smart Ambulance ML system.
-Provides file + console logging with timestamps.
-"""
+"""Logging helper used across training, backend, and frontend."""
+
+from __future__ import annotations
 
 import logging
-import os
 from datetime import datetime
+from pathlib import Path
+
+from .config import Config
 
 
-def setup_logger(name, log_dir="logs", level=logging.DEBUG):
-    """
-    Create a logger with both file and console handlers.
-    
-    Args:
-        name: Logger name (e.g., 'model_training', 'api')
-        log_dir: Directory to store log files
-        level: Logging level
-    
-    Returns:
-        logging.Logger instance
-    """
-    os.makedirs(log_dir, exist_ok=True)
-    
+def setup_logger(name: str, level: int = logging.INFO) -> logging.Logger:
     logger = logging.getLogger(name)
-    
-    # Avoid adding duplicate handlers
     if logger.handlers:
         return logger
-    
+
+    Config.ensure_dirs()
     logger.setLevel(level)
-    
-    # File handler — detailed logs
-    log_file = os.path.join(
-        log_dir, f"{name}_{datetime.now().strftime('%Y%m%d')}.log"
-    )
-    fh = logging.FileHandler(log_file, encoding="utf-8")
-    fh.setLevel(logging.DEBUG)
-    
-    # Console handler — info and above
-    ch = logging.StreamHandler()
-    ch.setLevel(logging.INFO)
-    
-    # Formatter
+    logger.propagate = False
+
     formatter = logging.Formatter(
-        "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S"
+        "%(asctime)s | %(levelname)s | %(name)s | %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
     )
-    fh.setFormatter(formatter)
-    ch.setFormatter(formatter)
-    
-    logger.addHandler(fh)
-    logger.addHandler(ch)
-    
+
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(level)
+    console_handler.setFormatter(formatter)
+
+    log_file = Path(Config.LOGS_DIR) / f"{name}_{datetime.now():%Y%m%d}.log"
+    file_handler = logging.FileHandler(log_file, encoding="utf-8")
+    file_handler.setLevel(logging.DEBUG)
+    file_handler.setFormatter(formatter)
+
+    logger.addHandler(console_handler)
+    logger.addHandler(file_handler)
     return logger

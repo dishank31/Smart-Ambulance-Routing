@@ -5,8 +5,7 @@ import sys
 import time
 from pathlib import Path
 
-# Find the correct Python interpreter
-# The .venv is at the parent directory (d:\ML Project\.venv)
+
 PROJECT_ROOT = Path(__file__).resolve().parent
 
 
@@ -29,7 +28,7 @@ def find_open_port(preferred: int) -> int:
     raise RuntimeError(f"No free port found near {preferred}")
 
 
-def run_backend_safe(python_exe: str, backend_port: int) -> subprocess.Popen:
+def run_backend(python_exe: str, backend_port: int) -> subprocess.Popen:
     print(f"Starting FastAPI backend on port {backend_port}...")
     return subprocess.Popen(
         [python_exe, "-m", "uvicorn", "backend.main:app", "--host", "127.0.0.1", "--port", str(backend_port)],
@@ -37,7 +36,7 @@ def run_backend_safe(python_exe: str, backend_port: int) -> subprocess.Popen:
     )
 
 
-def run_frontend_safe(python_exe: str, backend_port: int, frontend_port: int) -> subprocess.Popen:
+def run_frontend(python_exe: str, backend_port: int, frontend_port: int) -> subprocess.Popen:
     print(f"Starting Streamlit frontend on port {frontend_port}...")
     env = os.environ.copy()
     env["SMART_AMBULANCE_API"] = f"http://127.0.0.1:{backend_port}"
@@ -60,12 +59,12 @@ if __name__ == "__main__":
     frontend_proc = None
 
     try:
-        backend_proc = run_backend_safe(python_exe, backend_port)
+        backend_proc = run_backend(python_exe, backend_port)
         time.sleep(3)
         if backend_proc.poll() is not None:
             raise RuntimeError("Backend exited during startup.")
 
-        frontend_proc = run_frontend_safe(python_exe, backend_port, frontend_port)
+        frontend_proc = run_frontend(python_exe, backend_port, frontend_port)
         time.sleep(3)
         if frontend_proc.poll() is not None:
             raise RuntimeError("Frontend exited during startup.")
@@ -90,57 +89,5 @@ if __name__ == "__main__":
         if backend_proc and backend_proc.poll() is None:
             backend_proc.terminate()
         if frontend_proc and frontend_proc.poll() is None:
-            frontend_proc.terminate()
-        print("Done.")
-    raise SystemExit(0)
-
-def run_backend():
-    print("🚀 Starting FastAPI Backend...")
-    return subprocess.Popen([venv_python, "-m", "uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"], cwd=project_root)
-
-def run_frontend():
-    print("🎨 Starting Streamlit Frontend...")
-    return subprocess.Popen([venv_python, "-m", "streamlit", "run", "frontend/app_streamlit.py", "--server.port", "8501"], cwd=project_root)
-
-if __name__ == "__main__":
-    # Ensure we are in the project root
-    project_root = os.path.dirname(os.path.abspath(__file__))
-    os.chdir(project_root)
-    
-    backend_proc = None
-    frontend_proc = None
-    
-    try:
-        backend_proc = run_backend()
-        # Give backend a moment to initialize
-        time.sleep(5)
-        
-        frontend_proc = run_frontend()
-        
-        print("\n" + "="*50)
-        print("✅ SYSTEM ONLINE")
-        print("Backend: http://localhost:8000")
-        print("Frontend: http://localhost:8501")
-        print("="*50)
-        print("\nPress Ctrl+C to stop both servers.")
-        
-        # Keep the script running
-        while True:
-            time.sleep(1)
-            
-            # Check if processes are still running
-            if backend_proc.poll() is not None:
-                print("❌ Backend crashed. Exiting...")
-                break
-            if frontend_proc.poll() is not None:
-                print("❌ Frontend crashed. Exiting...")
-                break
-                
-    except KeyboardInterrupt:
-        print("\n🛑 Shutting down servers...")
-    finally:
-        if backend_proc:
-            backend_proc.terminate()
-        if frontend_proc:
             frontend_proc.terminate()
         print("Done.")

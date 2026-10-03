@@ -1,106 +1,77 @@
-"""
-Geospatial utility functions for the Smart Ambulance ML system.
-Haversine distance, bearing calculation, manhattan distance.
-"""
+"""Geospatial utilities used by feature engineering and routing."""
+
+from __future__ import annotations
+
+from math import asin, atan2, cos, degrees, radians, sin, sqrt
 
 import numpy as np
-from math import radians, sin, cos, sqrt, atan2, degrees
+import pandas as pd
 
 
-def haversine_distance(lat1, lon1, lat2, lon2):
-    """
-    Calculate the great-circle distance between two points on Earth.
-    
-    Args:
-        lat1, lon1: Coordinates of point 1 (degrees)
-        lat2, lon2: Coordinates of point 2 (degrees)
-    
-    Returns:
-        Distance in kilometers
-    """
-    R = 6371  # Earth radius in km
-    
-    lat1, lon1, lat2, lon2 = map(radians, [lat1, lon1, lat2, lon2])
-    
-    dlat = lat2 - lat1
-    dlon = lon2 - lon1
-    
-    a = sin(dlat / 2) ** 2 + cos(lat1) * cos(lat2) * sin(dlon / 2) ** 2
-    c = 2 * atan2(sqrt(a), sqrt(1 - a))
-    
-    return R * c
+EARTH_RADIUS_KM = 6371.0088
+
+
+def haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    lat1_rad, lon1_rad, lat2_rad, lon2_rad = map(radians, [lat1, lon1, lat2, lon2])
+    dlat = lat2_rad - lat1_rad
+    dlon = lon2_rad - lon1_rad
+    a = sin(dlat / 2) ** 2 + cos(lat1_rad) * cos(lat2_rad) * sin(dlon / 2) ** 2
+    return 2 * EARTH_RADIUS_KM * asin(sqrt(a))
 
 
 def haversine_vectorized(lat1, lon1, lat2, lon2):
-    """
-    Vectorized haversine for pandas Series / numpy arrays.
-    
-    Args:
-        lat1, lon1, lat2, lon2: Arrays of coordinates (degrees)
-    
-    Returns:
-        Array of distances in kilometers
-    """
-    R = 6371
-    
     lat1, lon1, lat2, lon2 = map(np.radians, [lat1, lon1, lat2, lon2])
-    
     dlat = lat2 - lat1
     dlon = lon2 - lon1
-    
     a = np.sin(dlat / 2) ** 2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon / 2) ** 2
-    c = 2 * np.arcsin(np.sqrt(a))
-    
-    return R * c
+    return 2 * EARTH_RADIUS_KM * np.arcsin(np.sqrt(a))
 
 
-def calculate_bearing(lat1, lon1, lat2, lon2):
-    """
-    Calculate the initial bearing from point 1 to point 2.
-    
-    Args:
-        lat1, lon1: Coordinates of point 1 (degrees)
-        lat2, lon2: Coordinates of point 2 (degrees)
-    
-    Returns:
-        Bearing in degrees (0-360)
-    """
-    lat1, lon1, lat2, lon2 = map(radians, [lat1, lon1, lat2, lon2])
-    
-    dlon = lon2 - lon1
-    
-    x = sin(dlon) * cos(lat2)
-    y = cos(lat1) * sin(lat2) - sin(lat1) * cos(lat2) * cos(dlon)
-    
-    bearing = atan2(x, y)
-    bearing = degrees(bearing)
-    bearing = (bearing + 360) % 360
-    
-    return bearing
+def calculate_bearing(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    lat1_rad, lon1_rad, lat2_rad, lon2_rad = map(radians, [lat1, lon1, lat2, lon2])
+    dlon = lon2_rad - lon1_rad
+    x = sin(dlon) * cos(lat2_rad)
+    y = cos(lat1_rad) * sin(lat2_rad) - sin(lat1_rad) * cos(lat2_rad) * cos(dlon)
+    return (degrees(atan2(x, y)) + 360) % 360
 
 
 def bearing_vectorized(lat1, lon1, lat2, lon2):
-    """Vectorized bearing calculation for pandas/numpy."""
     lat1, lon1, lat2, lon2 = map(np.radians, [lat1, lon1, lat2, lon2])
-    
     dlon = lon2 - lon1
-    
     x = np.sin(dlon) * np.cos(lat2)
     y = np.cos(lat1) * np.sin(lat2) - np.sin(lat1) * np.cos(lat2) * np.cos(dlon)
-    
-    bearing = np.degrees(np.arctan2(x, y))
-    return (bearing + 360) % 360
+    return (np.degrees(np.arctan2(x, y)) + 360) % 360
 
 
-def manhattan_distance(lat1, lon1, lat2, lon2):
-    """
-    Calculate the Manhattan (taxicab) distance — useful for grid-based cities.
-    
-    Args:
-        lat1, lon1, lat2, lon2: Coordinates (degrees)
-    
-    Returns:
-        Approximate distance in kilometers
-    """
-    KM_PER_DEGREE = 111.0  # approximate
-    return (abs(lat2 - lat1) + abs(lon2 - lon1)) * KM_PER_DEGREE
+def get_bounding_box(center_lat: float, center_lon: float, radius_km: float) -> tuple[float, float, float, float]:
+    lat_delta = radius_km / 111.0
+    lon_delta = radius_km / max(111.320 * cos(radians(center_lat)), 0.1)
+    return (
+        center_lat - lat_delta,
+        center_lat + lat_delta,
+        center_lon - lon_delta,
+        center_lon + lon_delta,
+    )
+
+
+def manhattan_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    north_south = haversine_distance(lat1, lon1, lat2, lon1)
+    east_west = haversine_distance(lat2, lon1, lat2, lon2)
+    return north_south + east_west
+
+
+def point_in_radius(point_lat: float, point_lon: float, center_lat: float, center_lon: float, radius_km: float) -> bool:
+    return haversine_distance(point_lat, point_lon, center_lat, center_lon) <= radius_km
+
+
+def filter_hospitals_by_radius(hospitals_df: pd.DataFrame, emergency_lat: float, emergency_lon: float, radius_km: float) -> pd.DataFrame:
+    if hospitals_df.empty:
+        return hospitals_df.copy()
+    frame = hospitals_df.copy()
+    frame["distance_km"] = haversine_vectorized(
+        np.full(len(frame), emergency_lat),
+        np.full(len(frame), emergency_lon),
+        frame["latitude"].to_numpy(),
+        frame["longitude"].to_numpy(),
+    )
+    return frame.loc[frame["distance_km"] <= radius_km].sort_values("distance_km").reset_index(drop=True)

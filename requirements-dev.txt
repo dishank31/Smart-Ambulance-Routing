@@ -1,0 +1,7 @@
+# Dev & notebooks (install on top of requirements.txt)
+-r requirements.txt
+ipykernel>=6.29.0
+jupyter>=1.0.0
+notebook>=7.0.0
+pytest>=8.0.0
+ruff>=0.6.0
